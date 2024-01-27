@@ -67,10 +67,10 @@ def get_ds(config):
         
 
     # Tokenizer for source language
-    tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config['lang_src'])
+    tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
     
     # Tokenizer for target language
-    tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config['lang_tgt'])
+    tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
     
     # # Train-test split
     # train_ds_size = int(0.9 * len(ds_raw))
@@ -88,7 +88,7 @@ def get_ds(config):
     print(f'Max length of target sentence: {max_len_tgt}')
 
     # Prepare DataLoaders
-    train_dataloader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
+    train_dataloader = DataLoader(train_ds, batch_size=config.get_config()['batch_size'], shuffle=True)
     # val_dataloader = DataLoader(val_ds, batch_size=config['batch_size'], shuffle=True)
 
     # return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
