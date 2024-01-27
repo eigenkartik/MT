@@ -18,9 +18,9 @@ def segregate_to_sentence_level(input_text):
     return sentences
 
 
-def get_all_sentences(ds, lang):
-    for item in ds:
-        yield item['translation'][lang]
+# def get_all_sentences(ds, lang):
+#     for item in ds:
+#         yield item['translation'][lang]
 
 def get_or_build_tokenizer(config, ds, lang):
     tokenizer_path = Path(config.get_config()['tokenizer_file'].format(lang))
@@ -29,7 +29,7 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
         tokenizer.pre_tokenizer = Whitespace()
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]","[SEP]"], min_frequency=1) # Amended on 26 Jan 2024
-        tokenizer.train_from_iterator(get_all_sentences(ds, lang), trainer=trainer)
+        tokenizer.train_from_iterator(ds, trainer=trainer)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
