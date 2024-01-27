@@ -1,7 +1,11 @@
 import torch
 import torch.nn as nn
 import math
+import config
+from utils import get_ds
 
+_, tokenizer_src, _ = get_ds(config)  
+ 
 class LayerNormalization(nn.Module):
 
     def __init__(self, features: int, eps:float=10**-6) -> None:
@@ -44,31 +48,66 @@ class InputEmbeddings(nn.Module):
         # Multiply by sqrt(d_model) to scale the embeddings according to the paper
         return self.embedding(x) * math.sqrt(self.d_model)
     
-class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, seq_len: int, dropout: float, sep_shift: int = 10) -> None:
         super().__init__()
         self.d_model = d_model
         self.seq_len = seq_len
         self.dropout = nn.Dropout(dropout)
+        self.sep_shift = sep_shift  # Shift after [SEP] token
         # Create a matrix of shape (seq_len, d_model)
         pe = torch.zeros(seq_len, d_model)
         # Create a vector of shape (seq_len)
-        position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1) # (seq_len, 1)
+        position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1)  # (seq_len, 1)
         # Create a vector of shape (d_model)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)) # (d_model / 2)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))  # (d_model / 2)
         # Apply sine to even indices
-        pe[:, 0::2] = torch.sin(position * div_term) # sin(position * (10000 ** (2i / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)  # sin(position * (10000 ** (2i / d_model))
         # Apply cosine to odd indices
-        pe[:, 1::2] = torch.cos(position * div_term) # cos(position * (10000 ** (2i / d_model))
+        pe[:, 1::2] = torch.cos(position * div_term)  # cos(position * (10000 ** (2i / d_model))
         # Add a batch dimension to the positional encoding
-        pe = pe.unsqueeze(0) # (1, seq_len, d_model)
+        pe = pe.unsqueeze(0)  # (1, seq_len, d_model)
         # Register the positional encoding as a buffer
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_model)
+        x_len = x.shape[1]
+        pe = self.pe[:, :x_len, :]  # Trim positional encoding to match input sequence length
+        # Shift after [SEP] token
+        for i in range(x_len - 1):
+            if x[0, i] == tokenizer_src.token_to_id("[SEP]"):
+                pe[:, i+1:, :] += self.sep_shift
+        x = x + pe.requires_grad_(False)  # (batch, seq_len, d_model)
         return self.dropout(x)
+
+    
+# class PositionalEncoding(nn.Module):
+
+#     def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
+#         super().__init__()
+#         self.d_model = d_model
+#         self.seq_len = seq_len
+#         self.dropout = nn.Dropout(dropout)
+#         # Create a matrix of shape (seq_len, d_model)
+#         pe = torch.zeros(seq_len, d_model)
+#         # Create a vector of shape (seq_len)
+#         position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1) # (seq_len, 1)
+#         # Create a vector of shape (d_model)
+#         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)) # (d_model / 2)
+#         # Apply sine to even indices
+#         pe[:, 0::2] = torch.sin(position * div_term) # sin(position * (10000 ** (2i / d_model))
+#         # Apply cosine to odd indices
+#         pe[:, 1::2] = torch.cos(position * div_term) # cos(position * (10000 ** (2i / d_model))
+#         # Add a batch dimension to the positional encoding
+#         pe = pe.unsqueeze(0) # (1, seq_len, d_model)
+#         # Register the positional encoding as a buffer
+#         self.register_buffer('pe', pe)
+
+#     def forward(self, x):
+#         x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_model)
+#         return self.dropout(x)
 
 class ResidualConnection(nn.Module):
     
