@@ -46,7 +46,9 @@ def get_ds(config):
     for i in range(len(ds_raw)):
         # Segregate each document into sentences
         sentences_src = segregate_to_sentence_level(ds_raw[i]['translation'][config.get_config()['lang_src']])
+        print(sentences_src)
         sentences_tgt = segregate_to_sentence_level(ds_raw[i]['translation'][config.get_config()['lang_tgt']])
+        print(sentences_tgt)
         
         # Concatenate src sentences with context
         if len(sentences_src) > 1:
