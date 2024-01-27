@@ -21,7 +21,7 @@ from pathlib import Path
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
-from utils import segregate_to_sentence_level
+from utils import segregate_to_sentence_level_tgt, segregate_to_sentence_level_src
 import dataset 
 
 sentences_with_context=[]
@@ -31,7 +31,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
     sep_idx = tokenizer_tgt.token_to_id('[SEP]')
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
-    sentences=segregate_to_sentence_level(source)
+    sentences=segregate_to_sentence_level_src(source)
     # Concatenate src sentences with context
     if len(sentences) > 1:
         for j in range(1, len(sentences)):
