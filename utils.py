@@ -35,6 +35,7 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer.pre_tokenizer = Whitespace()
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]","[SEP]"], min_frequency=1) # Amended on 26 Jan 2024
         tokenizer.train_from_iterator(ds, trainer=trainer)
+        tokenizer.train_from_iterator(ds, trainer=trainer)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -80,8 +81,10 @@ def get_ds(config):
 
     # Tokenizer for source language
     tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
+    tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
     
     # Tokenizer for target language
+    tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
     tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
     
     # # Train-test split
@@ -90,6 +93,7 @@ def get_ds(config):
     # train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
     # Create BilingualDataset for training
+    train_ds = BilingualDataset(sentences_with_context_source, sentences_with_context_target, tokenizer_src, tokenizer_tgt,config.get_config()['seq_len'])
     train_ds = BilingualDataset(sentences_with_context_source, sentences_with_context_target, tokenizer_src, tokenizer_tgt,config.get_config()['seq_len'])
     # val_ds = BilingualDataset(val_ds_raw, tokenizer_src, tokenizer_tgt, config['lang_src'], config['lang_tgt'], config['seq_len'])
 
@@ -100,6 +104,7 @@ def get_ds(config):
     print(f'Max length of target sentence: {max_len_tgt}')
 
     # Prepare DataLoaders
+    train_dataloader = DataLoader(train_ds, batch_size=config.get_config()['batch_size'], shuffle=True)
     train_dataloader = DataLoader(train_ds, batch_size=config.get_config()['batch_size'], shuffle=True)
     # val_dataloader = DataLoader(val_ds, batch_size=config['batch_size'], shuffle=True)
 
