@@ -1,3 +1,6 @@
-import config
+from transformers import PreTrainedTokenizerFast
 
-print(config.get_config()['datasource'])
+tokenizer=PreTrainedTokenizerFast(tokenizer_file="tokenizer_it.json")
+
+a=tokenizer.convert_tokens_to_ids('[SOS]')
+print(a)

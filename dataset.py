@@ -32,11 +32,15 @@ class BilingualDataset(Dataset):
         dec_input_tokens = self.tokenizer_tgt.encode(tgt_text).ids
 
         # Determine number of padding tokens needed
-        enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 3  # We will add <s>, </s>, <sep>
-        dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 2
+        # if self.sep_token in enc_input_tokens:
+        enc_num_padding_tokens = max(0, self.seq_len - len(enc_input_tokens) - 2)  # We will add <s>, </s>
+        dec_num_padding_tokens = max(0, self.seq_len - len(dec_input_tokens) - 1)
+        # else:
+        #     enc_num_padding_tokens = max(0, self.seq_len - len(enc_input_tokens) - 2)  # We will add <s>, </s>, <sep>
+        #     dec_num_padding_tokens = max(0, self.seq_len - len(dec_input_tokens) - 2)
 
         # Handle scenarios with one or two sentences in source text
-        if "[SEP]" in src_text:
+        if self.sep_token in enc_input_tokens:
             # Extract tokens for the second sentence
             enc_input_tokens_1 = self.tokenizer_src.encode(src_text.split("[SEP]")[0]).ids
             enc_input_tokens = self.tokenizer_src.encode(src_text.split("[SEP]")[1]).ids
@@ -63,33 +67,37 @@ class BilingualDataset(Dataset):
             )
 
         # Handle scenarios with one or two sentences in target text
-        if "[SEP]" in tgt_text:
-            # Extract tokens for the second sentence
-            dec_input_tokens_1 = self.tokenizer_tgt.encode(tgt_text.split("[SEP]")[0]).ids
-            dec_input_tokens = self.tokenizer_tgt.encode(tgt_text.split("[SEP]")[1]).ids
-            decoder_input = torch.cat(
-                [
-                    self.sos_token,
-                    torch.tensor(dec_input_tokens_1, dtype=torch.int64),
-                    self.sep_token,
-                    torch.tensor(dec_input_tokens , dtype=torch.int64),
-                    torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),
-                ],
-                dim=0,
-            )
-        else:
-            decoder_input = torch.cat(
-                [
-                    self.sos_token,
-                    torch.tensor(dec_input_tokens, dtype=torch.int64),
-                    torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),
-                ],
-                dim=0,
-            )
+        # if self.sep_token in dec_input_tokens:
+        #     # Extract tokens for the second sentence
+        #     dec_input_tokens_1 = self.tokenizer_tgt.encode(tgt_text.split("[SEP]")[0]).ids
+        #     dec_input_tokens = self.tokenizer_tgt.encode(tgt_text.split("[SEP]")[1]).ids
+        #     decoder_input = torch.cat(
+        #         [
+        #             self.sos_token,
+        #             torch.tensor(dec_input_tokens_1, dtype=torch.int64),
+        #             self.sep_token,
+        #             torch.tensor(dec_input_tokens , dtype=torch.int64),
+        #             self.eos_token,
+        #             torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),
+        #         ],
+        #         dim=0,
+        #     )
+        # else:
+        decoder_input = torch.cat(
+            [
+                self.sos_token,
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
+                # self.eos_token,
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),
+                
+            ],
+            dim=0,
+        )
 
         # Add padding to labels
         label = torch.cat(
-            [
+            [ 
+                # self.sos_token,
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
                 self.eos_token,
                 torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),

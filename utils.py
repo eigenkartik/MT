@@ -35,7 +35,6 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer.pre_tokenizer = Whitespace()
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]","[SEP]"], min_frequency=1) # Amended on 26 Jan 2024
         tokenizer.train_from_iterator(ds, trainer=trainer)
-        tokenizer.train_from_iterator(ds, trainer=trainer)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -44,8 +43,7 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # Load dataset
-    ds_raw = load_dataset(f"{config.get_config()['datasource']}", f"{config.get_config()['lang_src']}-{config.get_config()['lang_tgt']}", split='train[:10]')
-
+    ds_raw = load_dataset(f"{config.get_config()['datasource']}", f"{config.get_config()['lang_src']}-{config.get_config()['lang_tgt']}", split='train')
     # Prepare data for training
     sentences_with_context_source = []  # List to store sentences with context
     sentences_with_context_target = []
@@ -69,23 +67,24 @@ def get_ds(config):
         if len(sentences_tgt) > 1:
             for j in range(1, len(sentences_tgt)):
                 concatenated_sentence = sentences_tgt[j-1] + "[SEP]" + sentences_tgt[j]
-                sentences_with_context_source.append(concatenated_sentence)
+                sentences_with_context_target.append(concatenated_sentence)
         else:
-            sentences_with_context_source.append(sentences_tgt[0])
+            sentences_with_context_target.append(sentences_tgt[0])
 
     print(sentences_with_context_source)
     print(len(sentences_with_context_source))
-    # print(sentences_with_context_source)
+
+    print(sentences_with_context_target)
     print(len(sentences_with_context_target))
     
 
     # Tokenizer for source language
     tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
-    tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
+    # tokenizer_src = get_or_build_tokenizer(config, sentences_with_context_source, config.get_config()['lang_src'])
     
     # Tokenizer for target language
     tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
-    tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
+    # tokenizer_tgt = get_or_build_tokenizer(config, sentences_with_context_target, config.get_config()['lang_tgt'])
     
     # # Train-test split
     # train_ds_size = int(0.9 * len(ds_raw))
@@ -93,7 +92,6 @@ def get_ds(config):
     # train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
     # Create BilingualDataset for training
-    train_ds = BilingualDataset(sentences_with_context_source, sentences_with_context_target, tokenizer_src, tokenizer_tgt,config.get_config()['seq_len'])
     train_ds = BilingualDataset(sentences_with_context_source, sentences_with_context_target, tokenizer_src, tokenizer_tgt,config.get_config()['seq_len'])
     # val_ds = BilingualDataset(val_ds_raw, tokenizer_src, tokenizer_tgt, config['lang_src'], config['lang_tgt'], config['seq_len'])
 
@@ -105,8 +103,8 @@ def get_ds(config):
 
     # Prepare DataLoaders
     train_dataloader = DataLoader(train_ds, batch_size=config.get_config()['batch_size'], shuffle=True)
-    train_dataloader = DataLoader(train_ds, batch_size=config.get_config()['batch_size'], shuffle=True)
     # val_dataloader = DataLoader(val_ds, batch_size=config['batch_size'], shuffle=True)
+    # print(tokenizer_src)
 
     # return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
     return train_dataloader, tokenizer_src, tokenizer_tgt

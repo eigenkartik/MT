@@ -77,7 +77,7 @@ class PositionalEncoding(nn.Module):
         pe = self.pe[:, :x_len, :]  # Trim positional encoding to match input sequence length
         # Shift after [SEP] token
         for i in range(x_len - 1):
-            if x[0, i] == tokenizer_src.token_to_id("[SEP]"):
+            if (x[0, i] == tokenizer_src.token_to_id("[SEP]")).all():
                 pe[:, i+1:, :] += self.sep_shift
         x = x + pe.requires_grad_(False)  # (batch, seq_len, d_model)
         return self.dropout(x)
